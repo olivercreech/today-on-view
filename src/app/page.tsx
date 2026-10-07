@@ -1,68 +1,120 @@
 import Image from "next/image";
+import { getTodayEntry } from "@/lib/calendar";
+import { getGalleryArtworks, type MetArtwork } from "@/lib/met";
+import { generateContext } from "@/lib/anthropic";
+import type { Theme } from "@/lib/theme";
 
-export default function Home() {
+// Regenerate at most every 6 hours instead of on every request, so a burst of
+// traffic doesn't multiply Claude API calls for a page that only needs to change daily.
+export const revalidate = 21600;
+
+function fallbackContext(artwork: MetArtwork, theme: Theme): string {
+  return `${theme.blurb} "${artwork.title}" by ${artwork.artistDisplayName} was selected to represent today's theme.`;
+}
+
+export default async function Home() {
+  const now = new Date();
+  const dateLabel = now.toLocaleDateString("en-US", {
+    weekday: "long",
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  });
+
+  const { theme, season } = getTodayEntry(now);
+  const { artworks } = await getGalleryArtworks(theme, season, 6);
+
+  const gallery = await Promise.all(
+    artworks.map(async (artwork) => {
+      let context: string;
+      try {
+        context = (await generateContext(artwork, theme, dateLabel)) || fallbackContext(artwork, theme);
+      } catch {
+        context = fallbackContext(artwork, theme);
+      }
+      return { artwork, context };
+    }),
+  );
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert h-5 w-[100px]"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the{" "}
-            <code className="rounded bg-black/[.06] px-1.5 py-0.5 font-mono text-[0.9em] dark:bg-white/[.08]">
-              page.tsx
-            </code>{" "}
-            file.
+    <div className="flex flex-col flex-1 items-center bg-background font-sans">
+      <main className="w-full max-w-5xl px-6 py-20 sm:px-10">
+        <header className="mb-16 text-center">
+          <p className="text-xs font-medium uppercase tracking-[0.3em] text-accent">{dateLabel}</p>
+          <h1 className="mt-4 font-display text-5xl italic tracking-tight text-foreground sm:text-6xl">
+            {theme.title}
           </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
+          <p className="mx-auto mt-5 max-w-2xl font-display text-lg italic leading-relaxed text-muted">
+            {theme.blurb}
           </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
+        </header>
+
+        {gallery.length === 0 ? (
+          <p className="text-center text-muted">
+            No artworks could be loaded for today&apos;s theme. Please try again shortly.
+          </p>
+        ) : (
+          <div className="grid grid-cols-1 gap-12 sm:grid-cols-2">
+            {gallery.map(({ artwork, context }) => (
+              <article
+                key={artwork.objectID}
+                className="group flex flex-col overflow-hidden rounded-xl border border-border bg-background-elevated transition-shadow duration-300 hover:shadow-[0_0_50px_-12px_rgba(201,162,75,0.25)]"
+              >
+                <div className="relative aspect-4/3 w-full bg-black p-6">
+                  <div className="relative h-full w-full">
+                    <Image
+                      src={artwork.primaryImageSmall}
+                      alt={artwork.title}
+                      fill
+                      className="object-contain drop-shadow-[0_8px_30px_rgba(0,0,0,0.6)]"
+                      sizes="(min-width: 640px) 50vw, 100vw"
+                    />
+                  </div>
+                  <div
+                    className="pointer-events-none absolute inset-0"
+                    style={{
+                      background:
+                        "radial-gradient(ellipse at center, transparent 45%, rgba(0,0,0,0.65) 100%)",
+                    }}
+                  />
+                </div>
+                <div className="flex flex-1 flex-col gap-4 p-7">
+                  <div>
+                    <h2 className="font-display text-2xl text-foreground">{artwork.title}</h2>
+                    <p className="mt-1 text-xs uppercase tracking-widest text-accent">
+                      {artwork.artistDisplayName}
+                      {artwork.objectDate ? ` · ${artwork.objectDate}` : ""}
+                    </p>
+                  </div>
+                  <div className="flex-1 space-y-3 text-sm leading-relaxed text-muted">
+                    {context.split(/\n\s*\n/).map((paragraph, i) => (
+                      <p key={i}>{paragraph}</p>
+                    ))}
+                  </div>
+                  <a
+                    href={artwork.objectURL}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-sm font-medium text-accent underline underline-offset-4 decoration-accent/40 transition-colors hover:text-foreground"
+                  >
+                    View at the Met &rarr;
+                  </a>
+                </div>
+              </article>
+            ))}
+          </div>
+        )}
+
+        <footer className="mt-20 text-center text-xs text-muted/70">
+          Artwork data from the{" "}
           <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+            href="https://www.metmuseum.org/about-the-met/policies-and-documents/open-access"
+            className="underline decoration-accent/40 hover:text-accent"
           >
-            <Image
-              className="dark:invert h-[14px] w-4"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={14}
-            />
-            Deploy Now
+            Met Museum Open Access API
           </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
+          . Descriptions generated by Claude.
+        </footer>
       </main>
     </div>
   );

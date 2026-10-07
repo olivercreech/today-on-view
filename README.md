@@ -1,36 +1,55 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# On This Day — A Themed Art Gallery
 
-## Getting Started
+A single-page app that curates a small themed art gallery based on today's date —
+holidays, seasons, or artist birth/death anniversaries — pulling artworks from the
+[Met Museum's Open Access API](https://www.metmuseum.org/about-the-met/policies-and-documents/open-access)
+and generating a short piece of didactic wall text for each one with Claude.
 
-First, run the development server:
+## Stack
+
+- **Next.js (App Router) + TypeScript** — the whole app is one server-rendered page.
+- **Tailwind CSS** — styling.
+- **Met Museum Open Access API** — no key required (`src/lib/met.ts`).
+- **Anthropic SDK (Claude Opus 5)** — generates the per-artwork context paragraph (`src/lib/anthropic.ts`).
+- **Hand-curated calendar** — `src/lib/calendar.ts`, ~30 entries (holidays + artist anniversaries) with a
+  seasonal fallback for any date without an exact match.
+
+No database, no user accounts, no archive browsing — the whole app is one page that reflects "today."
+
+## Getting started
 
 ```bash
+npm install
+cp .env.local.example .env.local   # add your ANTHROPIC_API_KEY
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000). Without an `ANTHROPIC_API_KEY` set, the page still
+renders using a plain fallback sentence in place of the generated paragraph.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Extending the calendar
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Add entries to the `CALENDAR` array in `src/lib/calendar.ts`:
 
-## Learn More
+```ts
+{ id: "some-id", month: 3, day: 14, title: "Pi Day", blurb: "...", metQuery: "geometric pattern" }
+```
 
-To learn more about Next.js, take a look at the following resources:
+- `metQuery` is passed to the Met's `/search` endpoint. Set `artistOrCulture: true` to restrict the
+  search to the artist/culture field (better precision for artist names).
+- If a themed search returns fewer than 4 usable (public-domain, has-image) results, the gallery
+  automatically backfills with the current season's query.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Caching / cost control
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+The page is revalidated at most every 6 hours (`export const revalidate` in `src/app/page.tsx`), so a
+burst of visitors doesn't multiply Claude API calls — the gallery for the day is generated once and
+served from cache until the next revalidation window.
 
 ## Deploy on Vercel
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+```bash
+vercel
+```
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Set `ANTHROPIC_API_KEY` in the project's environment variables.
