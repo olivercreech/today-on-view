@@ -1,6 +1,6 @@
 import Image from "next/image";
-import { getTodayEntry } from "@/lib/calendar";
-import { getGalleryArtworks, type MetArtwork } from "@/lib/met";
+import { resolveGallery } from "@/lib/gallery";
+import type { MetArtwork } from "@/lib/met";
 import { generateContext } from "@/lib/anthropic";
 import type { Theme } from "@/lib/theme";
 
@@ -21,8 +21,7 @@ export default async function Home() {
     day: "numeric",
   });
 
-  const { theme, season } = getTodayEntry(now);
-  const { artworks } = await getGalleryArtworks(theme, season, 6);
+  const { theme, artworks } = await resolveGallery(now, 6);
 
   const gallery = await Promise.all(
     artworks.map(async (artwork) => {

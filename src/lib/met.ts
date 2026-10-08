@@ -75,8 +75,11 @@ function dedupeByTitle(artworks: MetArtwork[], seen: Set<string> = new Set()): M
   return result;
 }
 
+/** Minimum usable (public-domain, has-image) artworks a theme needs before it's considered a real match. */
+export const MINIMUM_ARTWORKS = 4;
+
 /** Search the Met's Open Access API and resolve up to `count` viewable, public-domain artworks. */
-async function fetchArtworks(query: string, count: number, artistOrCulture?: boolean): Promise<MetArtwork[]> {
+export async function searchMetArtworks(query: string, count: number, artistOrCulture?: boolean): Promise<MetArtwork[]> {
   // The search endpoint doesn't tell us which results have public-domain images,
   // so over-fetch candidates and filter client-side.
   const ids = await searchObjectIds(query, count * 5, artistOrCulture);
@@ -87,8 +90,27 @@ async function fetchArtworks(query: string, count: number, artistOrCulture?: boo
   return unique.slice(0, count);
 }
 
+/** Top up a thin primary result list with non-duplicate artworks from the season's query. */
+export async function backfillWithSeason(primary: MetArtwork[], season: Theme, count: number): Promise<MetArtwork[]> {
+  if (primary.length >= count) return primary.slice(0, count);
+
+  const seenIds = new Set(primary.map((a) => a.objectID));
+  const seenTitles = new Set(primary.map((a) => normalizedTitle(a.title)));
+  const backfill = dedupeByTitle(await searchMetArtworks(season.metQuery, count, season.artistOrCulture), seenTitles);
+
+  const merged = [...primary];
+  for (const artwork of backfill) {
+    if (merged.length >= count) break;
+    if (!seenIds.has(artwork.objectID)) {
+      merged.push(artwork);
+      seenIds.add(artwork.objectID);
+    }
+  }
+  return merged.slice(0, count);
+}
+
 /**
- * Get the gallery for today's theme, falling back to the current season's query
+ * Get the gallery for a theme, falling back to the current season's query
  * to top up the count if the themed search comes back thin.
  */
 export async function getGalleryArtworks(
@@ -96,23 +118,12 @@ export async function getGalleryArtworks(
   season: Theme,
   count = 6,
 ): Promise<{ artworks: MetArtwork[]; usedFallback: boolean }> {
-  const minimum = 4;
-  const primary = await fetchArtworks(theme.metQuery, count, theme.artistOrCulture);
+  const primary = await searchMetArtworks(theme.metQuery, count, theme.artistOrCulture);
 
-  if (primary.length >= minimum || theme.metQuery === season.metQuery) {
+  if (primary.length >= MINIMUM_ARTWORKS || theme.metQuery === season.metQuery) {
     return { artworks: primary.slice(0, count), usedFallback: false };
   }
 
-  const seenIds = new Set(primary.map((a) => a.objectID));
-  const seenTitles = new Set(primary.map((a) => normalizedTitle(a.title)));
-  const backfill = dedupeByTitle(await fetchArtworks(season.metQuery, count, season.artistOrCulture), seenTitles);
-  for (const artwork of backfill) {
-    if (primary.length >= count) break;
-    if (!seenIds.has(artwork.objectID)) {
-      primary.push(artwork);
-      seenIds.add(artwork.objectID);
-    }
-  }
-
-  return { artworks: primary.slice(0, count), usedFallback: true };
+  const merged = await backfillWithSeason(primary, season, count);
+  return { artworks: merged, usedFallback: true };
 }

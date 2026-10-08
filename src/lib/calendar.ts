@@ -45,7 +45,7 @@ export const CALENDAR: CalendarEntry[] = [
   { id: "new-years-eve", month: 12, day: 31, title: "Celebration & Festivity", blurb: "The last night of the year, marked by scenes of festivity, dance, and celebration.", metQuery: "festival celebration dance" },
 ];
 
-type Season = Theme & { id: string; startMonth: number; startDay: number; endMonth: number; endDay: number };
+export type Season = Theme & { id: string; startMonth: number; startDay: number; endMonth: number; endDay: number };
 
 const SEASONS: Season[] = [
   { id: "winter", title: "Winter", blurb: "There's no exact match for today on the calendar, so here's a winter-themed selection instead.", metQuery: "winter snow landscape", startMonth: 12, startDay: 21, endMonth: 3, endDay: 19 },
@@ -63,18 +63,10 @@ function inSeasonRange(month: number, day: number, s: Season): boolean {
   return md >= start || md <= end;
 }
 
-function getSeason(month: number, day: number): Season {
+export function getSeasonForDate(month: number, day: number): Season {
   return SEASONS.find((s) => inSeasonRange(month, day, s)) ?? SEASONS[0];
 }
 
-export function getTodayEntry(date: Date): {
-  theme: CalendarEntry | Season;
-  season: Season;
-  isFallback: boolean;
-} {
-  const month = date.getMonth() + 1;
-  const day = date.getDate();
-  const fixed = CALENDAR.find((e) => e.month === month && e.day === day);
-  const season = getSeason(month, day);
-  return { theme: fixed ?? season, season, isFallback: !fixed };
+export function findCalendarEntry(month: number, day: number): CalendarEntry | undefined {
+  return CALENDAR.find((e) => e.month === month && e.day === day);
 }
