@@ -23,6 +23,7 @@ Artwork on display:
 - Medium: ${artwork.medium || "unknown"}
 - Department: ${artwork.department || "unknown"}
 - Credit line: ${artwork.creditLine || "unknown"}
+- Subject tags (from the Met's own catalog): ${artwork.tags.length ? artwork.tags.join(", ") : "none given"}
 
 Write two short paragraphs of museum wall text about this piece (roughly 150-220 words total). The first
 should ground the reader in what they're looking at and why it matters art-historically. The second should

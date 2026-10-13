@@ -16,6 +16,7 @@ export type MetArtwork = {
   creditLine: string;
   objectURL: string;
   primaryImageSmall: string;
+  tags: string[];
 };
 
 async function searchObjectIds(query: string, limit: number, artistOrCulture?: boolean): Promise<number[]> {
@@ -51,6 +52,7 @@ async function getObject(id: number): Promise<MetArtwork | null> {
     creditLine: data.creditLine || "",
     objectURL: data.objectURL || `https://www.metmuseum.org/art/collection/search/${data.objectID}`,
     primaryImageSmall: data.primaryImageSmall,
+    tags: Array.isArray(data.tags) ? data.tags.map((t: { term: string }) => t.term).filter(Boolean) : [],
   };
 }
 

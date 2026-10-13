@@ -18,7 +18,7 @@ const playfairDisplay = Playfair_Display({
 });
 
 export const metadata: Metadata = {
-  title: "On This Day — A Themed Art Gallery",
+  title: "Today on View",
   description: "A themed art gallery curated for today's date, drawn from the Met Museum's Open Access collection.",
 };
 
