@@ -3,20 +3,22 @@
 A single-page app that curates a small themed art gallery based on today's date —
 holidays, seasons, or artist birth/death anniversaries — pulling artworks from the
 [Met Museum's Open Access API](https://www.metmuseum.org/about-the-met/policies-and-documents/open-access)
-and generating a short piece of didactic wall text for each one with Claude.
+and a short Wikipedia-sourced biography for each artist shown.
 
 ## Stack
 
 - **Next.js (App Router) + TypeScript** — the whole app is one server-rendered page.
 - **Tailwind CSS** — styling.
 - **Met Museum Open Access API** — no key required (`src/lib/met.ts`).
-- **Anthropic SDK (Claude Opus 5)** — generates the per-artwork context paragraph (`src/lib/anthropic.ts`).
+- **Wikipedia REST API** — no key required (`src/lib/wikipedia.ts`), one short bio per unique artist
+  shown that day.
 - **Hand-curated calendar** — `src/lib/calendar.ts`, ~30 entries (holidays + artist anniversaries).
 - **Wikidata fallback** — for any day not in the calendar, a live Wikidata lookup (`src/lib/wikidata.ts`)
   finds painters born/died that day and cross-checks them against the Met, before finally falling back
   to a seasonal theme. See "Gallery resolution order" below.
 
-No database, no user accounts, no archive browsing — the whole app is one page that reflects "today."
+No database, no user accounts, no archive browsing, and no paid API dependency — the whole app is one
+page that reflects "today," built entirely on free data sources.
 
 ## Gallery resolution order
 
@@ -34,12 +36,10 @@ Any of these that comes up thin on Met results backfills the remainder from the 
 
 ```bash
 npm install
-cp .env.local.example .env.local   # add your ANTHROPIC_API_KEY
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000). Without an `ANTHROPIC_API_KEY` set, the page still
-renders using a plain fallback sentence in place of the generated paragraph.
+Open [http://localhost:3000](http://localhost:3000). No environment variables or API keys needed.
 
 ## Extending the calendar
 
@@ -70,11 +70,11 @@ Good matches are written to `src/lib/calendar-stash.json` immediately (so an int
 progress). Periodically review that file and promote the entries you like into the `CALENDAR` array in
 `src/lib/calendar.ts` for a permanent, reviewed match.
 
-## Caching / cost control
+## Caching
 
 The page is revalidated at most every 6 hours (`export const revalidate` in `src/app/page.tsx`), so a
-burst of visitors doesn't multiply Claude API calls — the gallery for the day is generated once and
-served from cache until the next revalidation window.
+burst of visitors doesn't hammer the Met/Wikidata/Wikipedia APIs — the gallery for the day is generated
+once and served from cache until the next revalidation window.
 
 ## Deploy on Vercel
 
@@ -82,4 +82,4 @@ served from cache until the next revalidation window.
 vercel
 ```
 
-Set `ANTHROPIC_API_KEY` in the project's environment variables.
+No environment variables required.

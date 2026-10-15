@@ -10,7 +10,6 @@
     "backfill-calendar": "tsx scripts/backfill-calendar.ts"
   },
   "dependencies": {
-    "@anthropic-ai/sdk": "^0.124.0",
     "next": "16.4.0",
     "react": "19.2.8",
     "react-dom": "19.2.8"
