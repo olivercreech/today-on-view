@@ -36,24 +36,38 @@ export default async function Home() {
 
         {bios.length > 0 && (
           <section className="mb-10 space-y-4">
-            {bios.map((bio) => (
-              <div key={bio.name}>
-                <h2 className="text-xs font-semibold uppercase tracking-widest text-accent">{bio.name}</h2>
-                <p className="mt-1.5 text-sm leading-relaxed text-muted">{bio.extract}</p>
-                <div className="mt-1.5 flex flex-wrap items-center gap-x-5">
-                  <a
-                    href={bio.wikipediaUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    aria-label={`Read more about ${bio.name} on Wikipedia (opens in a new tab)`}
-                    className="text-sm font-medium text-accent underline underline-offset-4 decoration-accent/40 transition-colors hover:text-foreground"
+            {bios.map((bio) => {
+              // When the page title already is this artist's name (single-artist theme days),
+              // repeating it as a label right below is redundant — hide it visually but keep
+              // it for screen readers, which still benefit from an explicit heading here.
+              const redundantWithTitle = bios.length === 1 && bio.name.toLowerCase() === theme.title.toLowerCase();
+              return (
+                <div key={bio.name}>
+                  <h2
+                    className={
+                      redundantWithTitle
+                        ? "sr-only"
+                        : "text-xs font-semibold uppercase tracking-widest text-accent"
+                    }
                   >
-                    Read more on Wikipedia &rarr;
-                  </a>
-                  <ReadAloudButton text={bio.extract} label={`the biography of ${bio.name}`} />
+                    {bio.name}
+                  </h2>
+                  <p className="mt-1.5 text-sm leading-relaxed text-muted">{bio.extract}</p>
+                  <div className="mt-1.5 flex flex-wrap items-center gap-x-5">
+                    <a
+                      href={bio.wikipediaUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      aria-label={`Read more about ${bio.name} on Wikipedia (opens in a new tab)`}
+                      className="text-sm font-medium text-accent underline underline-offset-4 decoration-accent/40 transition-colors hover:text-foreground"
+                    >
+                      Read more on Wikipedia &rarr;
+                    </a>
+                    <ReadAloudButton text={bio.extract} label={`the biography of ${bio.name}`} />
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </section>
         )}
 
