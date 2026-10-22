@@ -20,6 +20,9 @@ const playfairDisplay = Playfair_Display({
 export const metadata: Metadata = {
   title: "Today on View",
   description: "A themed art gallery curated for today's date, drawn from the Met Museum's Open Access collection.",
+  alternates: {
+    types: { "application/rss+xml": "/feed.xml" },
+  },
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

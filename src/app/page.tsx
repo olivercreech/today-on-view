@@ -1,6 +1,7 @@
-import Image from "next/image";
 import { resolveGallery } from "@/lib/gallery";
 import { getArtistBios } from "@/lib/wikipedia";
+import { ReadAloudButton } from "@/components/ReadAloudButton";
+import { ArtworkCarousel } from "@/components/ArtworkCarousel";
 
 // Regenerate at most every 6 hours instead of on every request, so a burst of
 // traffic doesn't hammer the Met/Wikidata/Wikipedia APIs for a page that only needs to change daily.
@@ -20,7 +21,7 @@ export default async function Home() {
 
   return (
     <div className="flex flex-col flex-1 items-center bg-background font-sans">
-      <main className="w-full max-w-5xl px-6 py-20 sm:px-10">
+      <main className="w-full max-w-3xl px-6 py-20 sm:px-10">
         <header className="mb-16 text-center">
           <p className="text-xs font-medium uppercase tracking-[0.3em] text-accent">{dateLabel}</p>
           <h1 className="mt-4 font-display text-5xl italic tracking-tight text-foreground sm:text-6xl">
@@ -31,64 +32,8 @@ export default async function Home() {
           </p>
         </header>
 
-        {artworks.length === 0 ? (
-          <p className="text-center text-muted">
-            No artworks could be loaded for today&apos;s theme. Please try again shortly.
-          </p>
-        ) : (
-          <div className="grid grid-cols-1 gap-12 sm:grid-cols-2">
-            {artworks.map((artwork) => (
-              <article
-                key={artwork.objectID}
-                className="group flex flex-col overflow-hidden rounded-xl border border-border bg-background-elevated transition-shadow duration-300 hover:shadow-[0_0_50px_-12px_rgba(201,162,75,0.25)]"
-              >
-                <div className="relative aspect-4/3 w-full bg-black p-6">
-                  <div className="relative h-full w-full">
-                    <Image
-                      src={artwork.primaryImageSmall}
-                      alt={artwork.title}
-                      fill
-                      className="object-contain drop-shadow-[0_8px_30px_rgba(0,0,0,0.6)]"
-                      sizes="(min-width: 640px) 50vw, 100vw"
-                    />
-                  </div>
-                  <div
-                    className="pointer-events-none absolute inset-0"
-                    style={{
-                      background:
-                        "radial-gradient(ellipse at center, transparent 45%, rgba(0,0,0,0.65) 100%)",
-                    }}
-                  />
-                </div>
-                <div className="flex flex-1 flex-col gap-4 p-7">
-                  <div>
-                    <h2 className="font-display text-2xl text-foreground">{artwork.title}</h2>
-                    <p className="mt-1 text-xs uppercase tracking-widest text-accent">
-                      {artwork.artistDisplayName}
-                      {artwork.objectDate ? ` · ${artwork.objectDate}` : ""}
-                    </p>
-                  </div>
-                  {artwork.medium || artwork.department ? (
-                    <p className="flex-1 text-sm leading-relaxed text-muted">
-                      {[artwork.medium, artwork.department].filter(Boolean).join(" — ")}
-                    </p>
-                  ) : null}
-                  <a
-                    href={artwork.objectURL}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-sm font-medium text-accent underline underline-offset-4 decoration-accent/40 transition-colors hover:text-foreground"
-                  >
-                    View at the Met &rarr;
-                  </a>
-                </div>
-              </article>
-            ))}
-          </div>
-        )}
-
         {bios.length > 0 && (
-          <section className="mx-auto mt-20 max-w-3xl">
+          <section className="mb-16">
             <h2 className="text-center font-display text-3xl italic text-foreground">
               About {bios.length > 1 ? "the Artists" : "the Artist"}
             </h2>
@@ -97,18 +42,30 @@ export default async function Home() {
                 <div key={bio.name} className="border-t border-border pt-6">
                   <h3 className="font-display text-xl text-foreground">{bio.name}</h3>
                   <p className="mt-2 text-sm leading-relaxed text-muted">{bio.extract}</p>
-                  <a
-                    href={bio.wikipediaUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="mt-2 inline-block text-sm font-medium text-accent underline underline-offset-4 decoration-accent/40 transition-colors hover:text-foreground"
-                  >
-                    Read more on Wikipedia &rarr;
-                  </a>
+                  <div className="flex flex-wrap items-center gap-x-5">
+                    <a
+                      href={bio.wikipediaUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      aria-label={`Read more about ${bio.name} on Wikipedia (opens in a new tab)`}
+                      className="mt-2 inline-block text-sm font-medium text-accent underline underline-offset-4 decoration-accent/40 transition-colors hover:text-foreground"
+                    >
+                      Read more on Wikipedia &rarr;
+                    </a>
+                    <ReadAloudButton text={bio.extract} label={`the biography of ${bio.name}`} />
+                  </div>
                 </div>
               ))}
             </div>
           </section>
+        )}
+
+        {artworks.length === 0 ? (
+          <p className="text-center text-muted">
+            No artworks could be loaded for today&apos;s theme. Please try again shortly.
+          </p>
+        ) : (
+          <ArtworkCarousel artworks={artworks} />
         )}
 
         <footer className="mt-20 text-center text-xs text-muted/70">
@@ -124,6 +81,10 @@ export default async function Home() {
             Wikipedia
           </a>
           , CC BY-SA 4.0.
+          <br />
+          <a href="/feed.xml" className="mt-2 inline-block underline decoration-accent/40 hover:text-accent">
+            Subscribe via RSS
+          </a>
         </footer>
       </main>
     </div>
