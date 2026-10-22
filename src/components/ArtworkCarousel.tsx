@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { MetArtwork } from "@/lib/met";
 import { ArtworkMedia } from "./ArtworkMedia";
 import { ArtworkInfo } from "./ArtworkInfo";
@@ -12,6 +12,20 @@ export function ArtworkCarousel({ artworks }: { artworks: MetArtwork[] }) {
   function go(delta: number) {
     setIndex((i) => (i + delta + artworks.length) % artworks.length);
   }
+
+  useEffect(() => {
+    const count = artworks.length;
+    if (count <= 1) return;
+
+    function onKeyDown(e: KeyboardEvent) {
+      if (e.metaKey || e.ctrlKey || e.altKey) return; // don't steal browser/OS shortcuts
+      if (e.key === "ArrowLeft") setIndex((i) => (i - 1 + count) % count);
+      else if (e.key === "ArrowRight") setIndex((i) => (i + 1) % count);
+    }
+
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [artworks.length]);
 
   return (
     <div>
