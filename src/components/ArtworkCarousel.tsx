@@ -1,8 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import Image from "next/image";
 import type { MetArtwork } from "@/lib/met";
+import { ArtworkMedia } from "./ArtworkMedia";
+import { ArtworkInfo } from "./ArtworkInfo";
 
 export function ArtworkCarousel({ artworks }: { artworks: MetArtwork[] }) {
   const [index, setIndex] = useState(0);
@@ -15,24 +16,7 @@ export function ArtworkCarousel({ artworks }: { artworks: MetArtwork[] }) {
   return (
     <div>
       <div className="relative overflow-hidden rounded-xl border border-border bg-background-elevated">
-        <div className="relative aspect-4/3 w-full bg-black p-6 sm:aspect-16/9">
-          <div className="relative h-full w-full">
-            <Image
-              src={artwork.primaryImageSmall}
-              alt={`${artwork.title}, by ${artwork.artistDisplayName}`}
-              fill
-              priority
-              className="object-contain drop-shadow-[0_8px_30px_rgba(0,0,0,0.6)]"
-              sizes="(min-width: 640px) 80vw, 100vw"
-            />
-          </div>
-          <div
-            className="pointer-events-none absolute inset-0"
-            style={{
-              background: "radial-gradient(ellipse at center, transparent 45%, rgba(0,0,0,0.65) 100%)",
-            }}
-          />
-        </div>
+        <ArtworkMedia artwork={artwork} priority />
 
         {artworks.length > 1 && (
           <>
@@ -55,29 +39,7 @@ export function ArtworkCarousel({ artworks }: { artworks: MetArtwork[] }) {
           </>
         )}
 
-        <div className="flex flex-1 flex-col gap-4 p-7">
-          <div>
-            <h2 className="font-display text-2xl text-foreground">{artwork.title}</h2>
-            <p className="mt-1 text-xs uppercase tracking-widest text-accent">
-              {artwork.artistDisplayName}
-              {artwork.objectDate ? ` · ${artwork.objectDate}` : ""}
-            </p>
-          </div>
-          {artwork.medium || artwork.department ? (
-            <p className="text-sm leading-relaxed text-muted">
-              {[artwork.medium, artwork.department].filter(Boolean).join(" — ")}
-            </p>
-          ) : null}
-          <a
-            href={artwork.objectURL}
-            target="_blank"
-            rel="noopener noreferrer"
-            aria-label={`View "${artwork.title}" at the Met (opens in a new tab)`}
-            className="text-sm font-medium text-accent underline underline-offset-4 decoration-accent/40 transition-colors hover:text-foreground"
-          >
-            View at the Met &rarr;
-          </a>
-        </div>
+        <ArtworkInfo artwork={artwork} />
       </div>
 
       {artworks.length > 1 && (

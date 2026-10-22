@@ -2,6 +2,8 @@ import { resolveGallery } from "@/lib/gallery";
 import { getArtistBios } from "@/lib/wikipedia";
 import { ReadAloudButton } from "@/components/ReadAloudButton";
 import { ArtworkCarousel } from "@/components/ArtworkCarousel";
+import { ArtworkMedia } from "@/components/ArtworkMedia";
+import { ArtworkInfo } from "@/components/ArtworkInfo";
 
 // Regenerate at most every 6 hours instead of on every request, so a burst of
 // traffic doesn't hammer the Met/Wikidata/Wikipedia APIs for a page that only needs to change daily.
@@ -22,7 +24,7 @@ export default async function Home() {
   return (
     <div className="flex flex-col flex-1 items-center bg-background font-sans">
       <main className="w-full max-w-3xl px-6 py-20 sm:px-10">
-        <header className="mb-16 text-center">
+        <header className="mb-10 text-center">
           <p className="text-xs font-medium uppercase tracking-[0.3em] text-accent">{dateLabel}</p>
           <h1 className="mt-4 font-display text-5xl italic tracking-tight text-foreground sm:text-6xl">
             {theme.title}
@@ -33,30 +35,25 @@ export default async function Home() {
         </header>
 
         {bios.length > 0 && (
-          <section className="mb-16">
-            <h2 className="text-center font-display text-3xl italic text-foreground">
-              About {bios.length > 1 ? "the Artists" : "the Artist"}
-            </h2>
-            <div className="mt-8 space-y-8">
-              {bios.map((bio) => (
-                <div key={bio.name} className="border-t border-border pt-6">
-                  <h3 className="font-display text-xl text-foreground">{bio.name}</h3>
-                  <p className="mt-2 text-sm leading-relaxed text-muted">{bio.extract}</p>
-                  <div className="flex flex-wrap items-center gap-x-5">
-                    <a
-                      href={bio.wikipediaUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      aria-label={`Read more about ${bio.name} on Wikipedia (opens in a new tab)`}
-                      className="mt-2 inline-block text-sm font-medium text-accent underline underline-offset-4 decoration-accent/40 transition-colors hover:text-foreground"
-                    >
-                      Read more on Wikipedia &rarr;
-                    </a>
-                    <ReadAloudButton text={bio.extract} label={`the biography of ${bio.name}`} />
-                  </div>
+          <section className="mb-10 space-y-4">
+            {bios.map((bio) => (
+              <div key={bio.name}>
+                <h2 className="text-xs font-semibold uppercase tracking-widest text-accent">{bio.name}</h2>
+                <p className="mt-1.5 text-sm leading-relaxed text-muted">{bio.extract}</p>
+                <div className="mt-1.5 flex flex-wrap items-center gap-x-5">
+                  <a
+                    href={bio.wikipediaUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    aria-label={`Read more about ${bio.name} on Wikipedia (opens in a new tab)`}
+                    className="text-sm font-medium text-accent underline underline-offset-4 decoration-accent/40 transition-colors hover:text-foreground"
+                  >
+                    Read more on Wikipedia &rarr;
+                  </a>
+                  <ReadAloudButton text={bio.extract} label={`the biography of ${bio.name}`} />
                 </div>
-              ))}
-            </div>
+              </div>
+            ))}
           </section>
         )}
 
@@ -65,7 +62,25 @@ export default async function Home() {
             No artworks could be loaded for today&apos;s theme. Please try again shortly.
           </p>
         ) : (
-          <ArtworkCarousel artworks={artworks} />
+          <>
+            {/* Mobile: a plain scrolling stack, same as before the carousel existed. */}
+            <div className="space-y-10 sm:hidden">
+              {artworks.map((artwork) => (
+                <article
+                  key={artwork.objectID}
+                  className="overflow-hidden rounded-xl border border-border bg-background-elevated"
+                >
+                  <ArtworkMedia artwork={artwork} />
+                  <ArtworkInfo artwork={artwork} />
+                </article>
+              ))}
+            </div>
+
+            {/* Desktop/tablet: one artwork at a time, paged with prev/next. */}
+            <div className="hidden sm:block">
+              <ArtworkCarousel artworks={artworks} />
+            </div>
+          </>
         )}
 
         <footer className="mt-20 text-center text-xs text-muted/70">
