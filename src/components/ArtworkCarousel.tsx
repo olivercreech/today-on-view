@@ -52,7 +52,7 @@ export function ArtworkCarousel({ artworks }: { artworks: MetArtwork[] }) {
   return (
     <div>
       <div
-        className="relative overflow-hidden rounded-xl border border-border bg-background-elevated"
+        className="relative touch-pan-y overflow-hidden rounded-xl border border-border bg-background-elevated"
         onTouchStart={onTouchStart}
         onTouchEnd={onTouchEnd}
       >
