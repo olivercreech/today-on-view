@@ -15,8 +15,16 @@ function escapeXml(text: string): string {
     .replace(/'/g, "&apos;");
 }
 
+function getSiteUrl(request: Request): string {
+  // This route is statically prerendered, so `request.url` reflects Next's internal
+  // build-time stand-in (localhost), not the real deployed domain. Vercel automatically
+  // sets VERCEL_PROJECT_PRODUCTION_URL on every deploy — no manual config needed.
+  const productionUrl = process.env.VERCEL_PROJECT_PRODUCTION_URL;
+  return productionUrl ? `https://${productionUrl}` : new URL(request.url).origin;
+}
+
 export async function GET(request: Request) {
-  const siteUrl = new URL(request.url).origin;
+  const siteUrl = getSiteUrl(request);
   const now = new Date();
   const dateLabel = now.toLocaleDateString("en-US", { weekday: "long", year: "numeric", month: "long", day: "numeric" });
   const isoDate = now.toISOString().slice(0, 10);
