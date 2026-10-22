@@ -4,7 +4,7 @@ import type { MetArtwork } from "@/lib/met";
 /** The matted, vignetted image treatment shared by the mobile card list and the carousel. */
 export function ArtworkMedia({ artwork, priority = false }: { artwork: MetArtwork; priority?: boolean }) {
   return (
-    <div className="relative aspect-4/3 w-full bg-black p-6 sm:aspect-16/9">
+    <div className="relative aspect-16/9 w-full bg-black p-3 sm:aspect-4/3 sm:p-6">
       <div className="relative h-full w-full">
         <Image
           src={artwork.primaryImageSmall}

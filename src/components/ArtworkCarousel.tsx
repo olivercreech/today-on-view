@@ -83,7 +83,7 @@ export function ArtworkCarousel({ artworks }: { artworks: MetArtwork[] }) {
       </div>
 
       {artworks.length > 1 && (
-        <div className="mt-5 flex items-center justify-center gap-2" role="tablist" aria-label="Choose an artwork">
+        <div className="mt-2 flex items-center justify-center gap-2 sm:mt-5" role="tablist" aria-label="Choose an artwork">
           {artworks.map((a, i) => (
             <button
               key={a.objectID}

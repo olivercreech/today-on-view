@@ -21,19 +21,19 @@ export default async function Home() {
 
   return (
     <div className="flex flex-col flex-1 items-center bg-background font-sans">
-      <main className="w-full max-w-3xl px-6 py-20 sm:px-10">
-        <header className="mb-10 text-center">
+      <main className="w-full max-w-3xl px-6 py-6 sm:px-10 sm:py-20">
+        <header className="mb-5 text-center sm:mb-10">
           <p className="text-xs font-medium uppercase tracking-[0.3em] text-accent">{dateLabel}</p>
-          <h1 className="mt-4 font-display text-5xl italic tracking-tight text-foreground sm:text-6xl">
+          <h1 className="mt-1.5 font-display text-3xl italic tracking-tight text-foreground sm:mt-4 sm:text-5xl md:text-6xl">
             {theme.title}
           </h1>
-          <p className="mx-auto mt-5 max-w-2xl font-display text-lg italic leading-relaxed text-muted">
+          <p className="mx-auto mt-1.5 max-w-2xl font-display text-base italic leading-snug text-muted sm:mt-5 sm:text-lg sm:leading-relaxed">
             {theme.blurb}
           </p>
         </header>
 
         {bios.length > 0 && (
-          <section className="mb-10 space-y-4">
+          <section className="mb-5 space-y-4 sm:mb-10">
             {bios.map((bio) => {
               // When the page title already is this artist's name (single-artist theme days),
               // repeating it as a label right below is redundant — hide it visually but keep
@@ -50,7 +50,9 @@ export default async function Home() {
                   >
                     {bio.name}
                   </h2>
-                  <p className="mt-1.5 text-sm leading-relaxed text-muted">{bio.extract}</p>
+                  <p className="mt-1.5 line-clamp-3 text-sm leading-relaxed text-muted sm:line-clamp-none">
+                    {bio.extract}
+                  </p>
                   <div className="mt-1.5 flex flex-wrap items-center gap-x-5">
                     <a
                       href={bio.wikipediaUrl}
@@ -77,7 +79,7 @@ export default async function Home() {
           <ArtworkCarousel artworks={artworks} />
         )}
 
-        <footer className="mt-20 text-center text-xs text-muted/70">
+        <footer className="mt-6 text-center text-xs text-muted/70 sm:mt-20">
           Artwork data from the{" "}
           <a
             href="https://www.metmuseum.org/about-the-met/policies-and-documents/open-access"
