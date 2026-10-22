@@ -18,10 +18,11 @@ export type GalleryResolution = {
 const MAX_LIVE_CANDIDATE_ATTEMPTS = 5;
 
 function themeFromCandidate(candidate: WikidataCandidate): Theme {
+  // No name here — the page title already is candidate.name, shown directly above this blurb.
   const blurb =
     candidate.event === "birth"
-      ? `${candidate.name} was born on this day in ${candidate.year}.`
-      : `${candidate.name} died on this day in ${candidate.year}.`;
+      ? `Born on this day in ${candidate.year}.`
+      : `Died on this day in ${candidate.year}.`;
   return { title: candidate.name, blurb, metQuery: candidate.name, artistOrCulture: true };
 }
 

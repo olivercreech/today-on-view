@@ -108,10 +108,11 @@ async function main() {
             month,
             day,
             title: candidate.name,
+            // No name here — the page title already is candidate.name, shown directly above this blurb.
             blurb:
               candidate.event === "birth"
-                ? `${candidate.name} was born on this day in ${candidate.year}.`
-                : `${candidate.name} died on this day in ${candidate.year}.`,
+                ? `Born on this day in ${candidate.year}.`
+                : `Died on this day in ${candidate.year}.`,
             metQuery: candidate.name,
             artistOrCulture: true,
             source: "wikidata",
