@@ -2,8 +2,6 @@ import { resolveGallery } from "@/lib/gallery";
 import { getArtistBios } from "@/lib/wikipedia";
 import { ReadAloudButton } from "@/components/ReadAloudButton";
 import { ArtworkCarousel } from "@/components/ArtworkCarousel";
-import { ArtworkMedia } from "@/components/ArtworkMedia";
-import { ArtworkInfo } from "@/components/ArtworkInfo";
 
 // Regenerate at most every 6 hours instead of on every request, so a burst of
 // traffic doesn't hammer the Met/Wikidata/Wikipedia APIs for a page that only needs to change daily.
@@ -76,25 +74,7 @@ export default async function Home() {
             No artworks could be loaded for today&apos;s theme. Please try again shortly.
           </p>
         ) : (
-          <>
-            {/* Mobile: a plain scrolling stack, same as before the carousel existed. */}
-            <div className="space-y-10 sm:hidden">
-              {artworks.map((artwork) => (
-                <article
-                  key={artwork.objectID}
-                  className="overflow-hidden rounded-xl border border-border bg-background-elevated"
-                >
-                  <ArtworkMedia artwork={artwork} />
-                  <ArtworkInfo artwork={artwork} />
-                </article>
-              ))}
-            </div>
-
-            {/* Desktop/tablet: one artwork at a time, paged with prev/next. */}
-            <div className="hidden sm:block">
-              <ArtworkCarousel artworks={artworks} />
-            </div>
-          </>
+          <ArtworkCarousel artworks={artworks} />
         )}
 
         <footer className="mt-20 text-center text-xs text-muted/70">

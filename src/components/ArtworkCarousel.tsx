@@ -1,16 +1,38 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { MetArtwork } from "@/lib/met";
 import { ArtworkMedia } from "./ArtworkMedia";
 import { ArtworkInfo } from "./ArtworkInfo";
 
+const SWIPE_THRESHOLD_PX = 40;
+
 export function ArtworkCarousel({ artworks }: { artworks: MetArtwork[] }) {
   const [index, setIndex] = useState(0);
   const artwork = artworks[index];
+  const touchStart = useRef<{ x: number; y: number } | null>(null);
 
   function go(delta: number) {
     setIndex((i) => (i + delta + artworks.length) % artworks.length);
+  }
+
+  function onTouchStart(e: React.TouchEvent) {
+    const t = e.touches[0];
+    touchStart.current = { x: t.clientX, y: t.clientY };
+  }
+
+  function onTouchEnd(e: React.TouchEvent) {
+    if (!touchStart.current || artworks.length <= 1) return;
+    const t = e.changedTouches[0];
+    const deltaX = t.clientX - touchStart.current.x;
+    const deltaY = t.clientY - touchStart.current.y;
+    touchStart.current = null;
+
+    // Only treat it as a swipe if the motion is mostly horizontal and past the
+    // threshold — otherwise leave it alone so normal vertical page scroll still works.
+    if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > SWIPE_THRESHOLD_PX) {
+      go(deltaX < 0 ? 1 : -1);
+    }
   }
 
   useEffect(() => {
@@ -29,7 +51,11 @@ export function ArtworkCarousel({ artworks }: { artworks: MetArtwork[] }) {
 
   return (
     <div>
-      <div className="relative overflow-hidden rounded-xl border border-border bg-background-elevated">
+      <div
+        className="relative overflow-hidden rounded-xl border border-border bg-background-elevated"
+        onTouchStart={onTouchStart}
+        onTouchEnd={onTouchEnd}
+      >
         <ArtworkMedia artwork={artwork} priority />
 
         {artworks.length > 1 && (
