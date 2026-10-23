@@ -1,4 +1,4 @@
-import { DAY_SECONDS, USER_AGENT } from "./http";
+import { DAY_SECONDS, USER_AGENT, matchesQueryName } from "./http";
 
 const SUMMARY_API = "https://en.wikipedia.org/api/rest_v1/page/summary";
 const SEARCH_API = "https://en.wikipedia.org/w/api.php";
@@ -64,8 +64,12 @@ export async function getArtistBio(artistName: string): Promise<ArtistBio | null
   const direct = await fetchSummary(cleaned);
   if (direct) return direct;
 
+  // Wikipedia's full-text search ranks by loose relevance, not identity — it can hand back
+  // a page that only shares a word or two with the artist actually being searched for (e.g.
+  // "Charles Michel Campion" -> "Charles Aznavour filmography"). Require the resolved title
+  // to actually contain every word of the name we searched for before trusting it.
   const resolvedTitle = await searchTitle(cleaned);
-  if (!resolvedTitle) return null;
+  if (!resolvedTitle || !matchesQueryName(resolvedTitle, cleaned)) return null;
   return fetchSummary(resolvedTitle);
 }
 

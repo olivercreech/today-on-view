@@ -1,5 +1,5 @@
 import type { Theme } from "./theme";
-import { DAY_SECONDS } from "./http";
+import { DAY_SECONDS, matchesQueryName } from "./http";
 
 const BASE = "https://collectionapi.metmuseum.org/public/collection/v1";
 // The Met retired unpaginated /v1/search on 2026-10-01 in favor of this paginated endpoint.
@@ -60,28 +60,6 @@ function normalizedTitle(title: string): string {
   return title.trim().toLowerCase();
 }
 
-function significantWords(text: string): string[] {
-  return text
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(/[̀-ͯ]/g, "") // strip accents so "Cézanne" and "Cezanne" compare equal
-    .replace(/[^a-z0-9\s]/g, " ") // punctuation (hyphens, periods, parens) -> space
-    .split(/\s+/)
-    .filter(Boolean);
-}
-
-/**
- * The Met's `q` search parameter does loose/fuzzy text matching, not an exact-field match —
- * searching artistOrCulture for "Jean-Louis Forain" can return a completely unrelated "Jean
- * Louis" (a fashion designer) or "Jean-Louis Leferre" (a different person entirely) just
- * because they share some words. Require every word of the query to actually appear in the
- * object's own artist field before trusting it as a real match for that artist.
- */
-function matchesArtistQuery(artistDisplayName: string, query: string): boolean {
-  const nameWords = new Set(significantWords(artistDisplayName));
-  return significantWords(query).every((w) => nameWords.has(w));
-}
-
 /**
  * Drop artworks whose title repeats one already kept. The Met often catalogs a print's
  * individual plates, states, or companion pieces as separate objects with the same or
@@ -112,7 +90,7 @@ export async function searchMetArtworks(query: string, count: number, artistOrCu
   const objects = await Promise.all(ids.map(getObject));
   let resolved = objects.filter((o): o is MetArtwork => o !== null);
   if (artistOrCulture) {
-    resolved = resolved.filter((o) => matchesArtistQuery(o.artistDisplayName, query));
+    resolved = resolved.filter((o) => matchesQueryName(o.artistDisplayName, query));
   }
 
   const unique = dedupeByTitle(resolved);
