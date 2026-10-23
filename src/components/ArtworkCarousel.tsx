@@ -1,9 +1,8 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import Image from "next/image";
 import type { MetArtwork } from "@/lib/met";
-import { ArtworkMedia } from "./ArtworkMedia";
-import { ArtworkInfo } from "./ArtworkInfo";
 
 const SWIPE_THRESHOLD_PX = 40;
 
@@ -56,7 +55,22 @@ export function ArtworkCarousel({ artworks }: { artworks: MetArtwork[] }) {
         onTouchStart={onTouchStart}
         onTouchEnd={onTouchEnd}
       >
-        <ArtworkMedia artwork={artwork} priority />
+        <div className="relative aspect-16/9 w-full bg-black p-3 sm:aspect-4/3 sm:p-6">
+          <div className="relative h-full w-full">
+            <Image
+              src={artwork.primaryImageSmall}
+              alt={`${artwork.title}, by ${artwork.artistDisplayName}`}
+              fill
+              priority
+              className="object-contain drop-shadow-[0_8px_30px_rgba(0,0,0,0.6)]"
+              sizes="(min-width: 640px) 80vw, 100vw"
+            />
+          </div>
+          <div
+            className="pointer-events-none absolute inset-0"
+            style={{ background: "radial-gradient(ellipse at center, transparent 45%, rgba(0,0,0,0.65) 100%)" }}
+          />
+        </div>
 
         {artworks.length > 1 && (
           <>
@@ -79,7 +93,29 @@ export function ArtworkCarousel({ artworks }: { artworks: MetArtwork[] }) {
           </>
         )}
 
-        <ArtworkInfo artwork={artwork} />
+        <div className="flex flex-1 flex-col gap-2 p-4 sm:gap-4 sm:p-7">
+          <div>
+            <h2 className="font-display text-lg text-foreground sm:text-2xl">{artwork.title}</h2>
+            <p className="mt-1 text-xs uppercase tracking-widest text-accent">
+              {artwork.artistDisplayName}
+              {artwork.objectDate ? ` · ${artwork.objectDate}` : ""}
+            </p>
+          </div>
+          {artwork.medium || artwork.department ? (
+            <p className="hidden text-sm leading-relaxed text-muted sm:block">
+              {[artwork.medium, artwork.department].filter(Boolean).join(" — ")}
+            </p>
+          ) : null}
+          <a
+            href={artwork.objectURL}
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label={`View "${artwork.title}" at the Met (opens in a new tab)`}
+            className="text-sm font-medium text-accent underline underline-offset-4 decoration-accent/40 transition-colors hover:text-foreground"
+          >
+            View at the Met &rarr;
+          </a>
+        </div>
       </div>
 
       {artworks.length > 1 && (

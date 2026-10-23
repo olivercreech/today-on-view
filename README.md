@@ -5,6 +5,18 @@ holidays, seasons, or artist birth/death anniversaries — pulling artworks from
 [Met Museum's Open Access API](https://www.metmuseum.org/about-the-met/policies-and-documents/open-access)
 and a short Wikipedia-sourced biography for each artist shown.
 
+## Features
+
+- A single artwork at a time in a carousel — prev/next buttons, dot navigation, left/right arrow
+  keys, and touch swipe on mobile (`src/components/ArtworkCarousel.tsx`).
+- A free, no-account "Listen" button on each artist bio, read aloud via the browser's built-in
+  Web Speech API (`src/components/ReadAloudButton.tsx`).
+- An RSS feed at `/feed.xml` (`src/app/feed.xml/route.ts`), auto-discoverable from the page `<head>`
+  and linked in the footer. Deliberately a single, daily-changing item — consistent with the rest of
+  the app, there's no archive of past days.
+- Mobile-first responsive layout: substantially tighter spacing/type scale and a clamped bio excerpt
+  on small screens, full layout on desktop/tablet.
+
 ## Stack
 
 - **Next.js (App Router) + TypeScript** — the whole app is one server-rendered page.

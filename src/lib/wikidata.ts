@@ -1,9 +1,6 @@
-const SPARQL_ENDPOINT = "https://query.wikidata.org/sparql";
-const DAY_SECONDS = 60 * 60 * 24;
+import { DAY_SECONDS, USER_AGENT } from "./http";
 
-// Wikidata asks every client to send a descriptive User-Agent with contact info.
-// See https://meta.wikimedia.org/wiki/User-Agent_policy
-const USER_AGENT = "art-gallery-app/1.0 (https://github.com/; contact: oliverbcreech@gmail.com)";
+const SPARQL_ENDPOINT = "https://query.wikidata.org/sparql";
 
 export type WikidataCandidate = {
   name: string;

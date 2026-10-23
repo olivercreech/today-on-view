@@ -1,9 +1,9 @@
 import type { Theme } from "./theme";
+import { DAY_SECONDS } from "./http";
 
 const BASE = "https://collectionapi.metmuseum.org/public/collection/v1";
 // The Met retired unpaginated /v1/search on 2026-10-01 in favor of this paginated endpoint.
 const SEARCH_URL = "https://collectionapi.metmuseum.org/public/collection/v1.1/search";
-const DAY_SECONDS = 60 * 60 * 24;
 
 export type MetArtwork = {
   objectID: number;
@@ -115,17 +115,12 @@ export async function backfillWithSeason(primary: MetArtwork[], season: Theme, c
  * Get the gallery for a theme, falling back to the current season's query
  * to top up the count if the themed search comes back thin.
  */
-export async function getGalleryArtworks(
-  theme: Theme,
-  season: Theme,
-  count = 6,
-): Promise<{ artworks: MetArtwork[]; usedFallback: boolean }> {
+export async function getGalleryArtworks(theme: Theme, season: Theme, count = 6): Promise<MetArtwork[]> {
   const primary = await searchMetArtworks(theme.metQuery, count, theme.artistOrCulture);
 
   if (primary.length >= MINIMUM_ARTWORKS || theme.metQuery === season.metQuery) {
-    return { artworks: primary.slice(0, count), usedFallback: false };
+    return primary.slice(0, count);
   }
 
-  const merged = await backfillWithSeason(primary, season, count);
-  return { artworks: merged, usedFallback: true };
+  return backfillWithSeason(primary, season, count);
 }

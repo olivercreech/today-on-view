@@ -1,10 +1,7 @@
+import { DAY_SECONDS, USER_AGENT } from "./http";
+
 const SUMMARY_API = "https://en.wikipedia.org/api/rest_v1/page/summary";
 const SEARCH_API = "https://en.wikipedia.org/w/api.php";
-const DAY_SECONDS = 60 * 60 * 24;
-
-// Wikimedia asks every client to send a descriptive User-Agent with contact info.
-// See https://meta.wikimedia.org/wiki/User-Agent_policy
-const USER_AGENT = "art-gallery-app/1.0 (https://github.com/; contact: oliverbcreech@gmail.com)";
 
 export type ArtistBio = {
   name: string; // resolved Wikipedia article title, not necessarily the Met's exact spelling
