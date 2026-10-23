@@ -96,44 +96,50 @@ async function main() {
 
     try {
       const candidates = await getArtistsBornOrDiedOn(month, day, candidateLimit);
-      let matched = false;
+      // Over-fetch past GALLERY_COUNT so a 100-work painter and a 1000-work painter don't
+      // both just look like "6" — evaluate all candidates and keep the richest match, not
+      // just the first one to clear the minimum (notability and Met representation don't
+      // reliably correlate, so the first-ranked candidate is often a weak choice).
+      const evalCount = Math.max(GALLERY_COUNT, 8);
+      let best: { candidate: (typeof candidates)[number]; metMatches: number } | undefined;
 
       for (const candidate of candidates) {
-        const artworks = await searchMetArtworks(candidate.name, GALLERY_COUNT, true);
+        const artworks = await searchMetArtworks(candidate.name, evalCount, true);
         await sleep(delayMs);
 
-        if (artworks.length >= MINIMUM_ARTWORKS) {
-          const entry: StashEntry = {
-            id: `${slugify(candidate.name)}-${candidate.event}`,
-            month,
-            day,
-            title: candidate.name,
-            // No name here — the page title already is candidate.name, shown directly above this blurb.
-            blurb:
-              candidate.event === "birth"
-                ? `Born on this day in ${candidate.year}.`
-                : `Died on this day in ${candidate.year}.`,
-            metQuery: candidate.name,
-            artistOrCulture: true,
-            source: "wikidata",
-            event: candidate.event,
-            year: candidate.year,
-            sitelinks: candidate.sitelinks,
-            metMatches: artworks.length,
-            addedAt: new Date().toISOString().slice(0, 10),
-          };
-
-          stash = [...stash.filter((e) => !(e.month === month && e.day === day)), entry];
-          saveStash(stash);
-
-          console.log(`[${label}] matched ${candidate.name} (${artworks.length} Met works)`);
-          found++;
-          matched = true;
-          break;
+        if (artworks.length >= MINIMUM_ARTWORKS && (!best || artworks.length > best.metMatches)) {
+          best = { candidate, metMatches: artworks.length };
         }
       }
 
-      if (!matched) {
+      if (best) {
+        const { candidate, metMatches } = best;
+        const entry: StashEntry = {
+          id: `${slugify(candidate.name)}-${candidate.event}`,
+          month,
+          day,
+          title: candidate.name,
+          // No name here — the page title already is candidate.name, shown directly above this blurb.
+          blurb:
+            candidate.event === "birth"
+              ? `Born on this day in ${candidate.year}.`
+              : `Died on this day in ${candidate.year}.`,
+          metQuery: candidate.name,
+          artistOrCulture: true,
+          source: "wikidata",
+          event: candidate.event,
+          year: candidate.year,
+          sitelinks: candidate.sitelinks,
+          metMatches,
+          addedAt: new Date().toISOString().slice(0, 10),
+        };
+
+        stash = [...stash.filter((e) => !(e.month === month && e.day === day)), entry];
+        saveStash(stash);
+
+        console.log(`[${label}] matched ${candidate.name} (${metMatches}+ Met works)`);
+        found++;
+      } else {
         console.log(`[${label}] no match found among ${candidates.length} candidate(s)`);
       }
     } catch (err) {
