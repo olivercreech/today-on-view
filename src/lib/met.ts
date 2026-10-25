@@ -116,16 +116,29 @@ export async function backfillWithSeason(primary: MetArtwork[], season: Theme, c
   return merged.slice(0, count);
 }
 
+export type GalleryArtworksResult = {
+  artworks: MetArtwork[];
+  /**
+   * Whether the theme's own query produced at least one real artwork. Some curated
+   * entries name an artist whose work the Met will never have as public domain (e.g.
+   * Picasso died in 1973 and his estate still holds copyright) — in that case `artworks`
+   * is entirely season backfill, and the caller should treat this theme as a non-match
+   * rather than show its title/bio next to artworks that have nothing to do with it.
+   */
+  matchedTheme: boolean;
+};
+
 /**
  * Get the gallery for a theme, falling back to the current season's query
  * to top up the count if the themed search comes back thin.
  */
-export async function getGalleryArtworks(theme: Theme, season: Theme, count = 6): Promise<MetArtwork[]> {
+export async function getGalleryArtworks(theme: Theme, season: Theme, count = 6): Promise<GalleryArtworksResult> {
   const primary = await searchMetArtworks(theme.metQuery, count, theme.artistOrCulture);
+  const matchedTheme = primary.length > 0;
 
   if (primary.length >= MINIMUM_ARTWORKS || theme.metQuery === season.metQuery) {
-    return primary.slice(0, count);
+    return { artworks: primary.slice(0, count), matchedTheme };
   }
 
-  return backfillWithSeason(primary, season, count);
+  return { artworks: await backfillWithSeason(primary, season, count), matchedTheme };
 }

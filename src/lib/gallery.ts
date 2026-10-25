@@ -66,14 +66,14 @@ export async function resolveGallery(date: Date, count = 6): Promise<GalleryReso
 
   const curated = findCalendarEntry(month, day);
   if (curated) {
-    const artworks = await getGalleryArtworks(curated, season, count);
-    return { theme: curated, artworks };
+    const { artworks, matchedTheme } = await getGalleryArtworks(curated, season, count);
+    if (matchedTheme) return { theme: curated, artworks };
   }
 
   const stashed = findStashEntry(month, day);
   if (stashed) {
-    const artworks = await getGalleryArtworks(stashed, season, count);
-    return { theme: stashed, artworks };
+    const { artworks, matchedTheme } = await getGalleryArtworks(stashed, season, count);
+    if (matchedTheme) return { theme: stashed, artworks };
   }
 
   const wikidataMatch = await findBestWikidataMatch(month, day, count, MAX_LIVE_CANDIDATE_ATTEMPTS);
