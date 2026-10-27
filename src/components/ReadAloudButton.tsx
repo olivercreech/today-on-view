@@ -56,9 +56,9 @@ export function ReadAloudButton({ text, label }: { text: string; label: string }
     const utterance = new SpeechSynthesisUtterance(text);
     utterance.lang = "en-GB"; // hints a British voice even if no exact voice match is found below
     // The default en-GB voice on several browsers/OSes ("Daniel" on Safari/Chrome for
-    // Mac) has a very low, dramatic pitch by default — raise it toward a more natural,
-    // less comically deep tone.
-    utterance.pitch = 1.15;
+    // Mac) has a very low, dramatic pitch by default. A small bump wasn't enough to cut
+    // through how deep it starts — push it further toward a normal speaking pitch.
+    utterance.pitch = 1.5;
     const voice = pickBritishVoice();
     if (voice) utterance.voice = voice;
     utterance.onend = () => setSpeaking(false);
