@@ -14,22 +14,30 @@ function getServerSnapshot() {
   return false;
 }
 
-/**
- * Prefers a British English voice (and a female one, if the browser's voice names
- * say so — the Web Speech API has no real "gender" field, just naming conventions
- * that vary by OS). Entirely dependent on what voices the visitor's own device/browser
- * ships with; there's no universal "Oxford" voice to request, just en-GB as the closest
- * standard category. Falls back to the browser's default voice if no en-GB voice exists.
- */
 // Most browsers/OSes don't actually label voices "female" in the name — they use proper
-// names instead, and those names vary by platform. This list covers the common ones
-// (macOS/Safari, Chrome, Edge/Windows) so the female check below actually matches something.
-const KNOWN_FEMALE_VOICE_NAMES = /female|kate|serena|stephanie|fiona|moira|tessa|martha|libby|hazel|sonia/i;
+// names instead, and those names vary by platform. This list covers common ones across
+// macOS/Safari, Chrome, and Windows/Edge, plus "Samantha" — the one voice virtually
+// guaranteed to be pre-installed on macOS/Safari without the user downloading anything.
+const KNOWN_PLEASANT_VOICE_NAMES =
+  /female|samantha|victoria|karen|susan|zira|kate|serena|stephanie|fiona|moira|tessa|martha|libby|hazel|sonia/i;
 
-function pickBritishVoice(): SpeechSynthesisVoice | undefined {
+/**
+ * Picks a voice to read with. Earlier versions of this forced an en-GB (British) voice,
+ * but on a typical Mac/Safari setup the only pre-installed en-GB voice is "Daniel" — a
+ * deliberately deep, dramatic voice — while nicer-sounding British voices (Kate, Serena)
+ * require the user to manually download them in System Settings. Safari also largely
+ * ignores the `pitch` property on its built-in voices, so there's no way to tune Daniel's
+ * pitch back to normal from code. Prefer any pleasant-sounding English voice over forcing
+ * a British accent that, in practice, usually means "the deep one."
+ */
+function pickVoice(): SpeechSynthesisVoice | undefined {
   const voices = window.speechSynthesis.getVoices();
-  const british = voices.filter((v) => v.lang.toLowerCase().startsWith("en-gb"));
-  return british.find((v) => KNOWN_FEMALE_VOICE_NAMES.test(v.name)) ?? british[0];
+  const english = voices.filter((v) => v.lang.toLowerCase().startsWith("en"));
+  const pleasant = english.filter((v) => KNOWN_PLEASANT_VOICE_NAMES.test(v.name));
+
+  const britishPleasant = pleasant.find((v) => v.lang.toLowerCase().startsWith("en-gb"));
+  const anyBritish = english.find((v) => v.lang.toLowerCase().startsWith("en-gb"));
+  return britishPleasant ?? pleasant[0] ?? anyBritish ?? english[0];
 }
 
 /**
@@ -54,13 +62,14 @@ export function ReadAloudButton({ text, label }: { text: string; label: string }
     window.speechSynthesis.cancel();
 
     const utterance = new SpeechSynthesisUtterance(text);
-    utterance.lang = "en-GB"; // hints a British voice even if no exact voice match is found below
-    // The default en-GB voice on several browsers/OSes ("Daniel" on Safari/Chrome for
-    // Mac) has a very low, dramatic pitch by default. A small bump wasn't enough to cut
-    // through how deep it starts — push it further toward a normal speaking pitch.
-    utterance.pitch = 1.5;
-    const voice = pickBritishVoice();
-    if (voice) utterance.voice = voice;
+    const voice = pickVoice();
+    if (voice) {
+      utterance.voice = voice;
+      utterance.lang = voice.lang;
+    }
+    // Harmless on voices that ignore it (Safari mostly does), and still helps on
+    // browsers/voices that do respect it.
+    utterance.pitch = 1.1;
     utterance.onend = () => setSpeaking(false);
     utterance.onerror = () => setSpeaking(false);
     window.speechSynthesis.speak(utterance);
