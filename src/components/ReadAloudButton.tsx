@@ -21,10 +21,15 @@ function getServerSnapshot() {
  * ships with; there's no universal "Oxford" voice to request, just en-GB as the closest
  * standard category. Falls back to the browser's default voice if no en-GB voice exists.
  */
+// Most browsers/OSes don't actually label voices "female" in the name — they use proper
+// names instead, and those names vary by platform. This list covers the common ones
+// (macOS/Safari, Chrome, Edge/Windows) so the female check below actually matches something.
+const KNOWN_FEMALE_VOICE_NAMES = /female|kate|serena|stephanie|fiona|moira|tessa|martha|libby|hazel|sonia/i;
+
 function pickBritishVoice(): SpeechSynthesisVoice | undefined {
   const voices = window.speechSynthesis.getVoices();
   const british = voices.filter((v) => v.lang.toLowerCase().startsWith("en-gb"));
-  return british.find((v) => /female/i.test(v.name)) ?? british[0];
+  return british.find((v) => KNOWN_FEMALE_VOICE_NAMES.test(v.name)) ?? british[0];
 }
 
 /**
@@ -50,6 +55,10 @@ export function ReadAloudButton({ text, label }: { text: string; label: string }
 
     const utterance = new SpeechSynthesisUtterance(text);
     utterance.lang = "en-GB"; // hints a British voice even if no exact voice match is found below
+    // The default en-GB voice on several browsers/OSes ("Daniel" on Safari/Chrome for
+    // Mac) has a very low, dramatic pitch by default — raise it toward a more natural,
+    // less comically deep tone.
+    utterance.pitch = 1.15;
     const voice = pickBritishVoice();
     if (voice) utterance.voice = voice;
     utterance.onend = () => setSpeaking(false);
