@@ -1,22 +1,22 @@
 import { resolveGallery } from "@/lib/gallery";
+import { headers } from "next/headers";
+import { getSiteDate, resolveTimeZone } from "@/lib/date";
 import { getArtistBios } from "@/lib/wikipedia";
 import { ReadAloudButton } from "@/components/ReadAloudButton";
 import { ArtworkCarousel } from "@/components/ArtworkCarousel";
 
-// Regenerate at most every 6 hours instead of on every request, so a burst of
-// traffic doesn't hammer the Met/Wikidata/Wikipedia APIs for a page that only needs to change daily.
-export const revalidate = 21600;
+// Rendered per request (reading headers opts the page into dynamic rendering) so each
+// visitor sees the gallery for *their* local date, flipping exactly at their midnight.
+// The upstream Met/Wikidata/Wikipedia fetches are cached for a day on their own, so a
+// render is cheap and doesn't hammer those APIs.
 
 export default async function Home() {
   const now = new Date();
-  const dateLabel = now.toLocaleDateString("en-US", {
-    weekday: "long",
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-  });
+  // Vercel sets this from the visitor's IP geolocation; absent locally, so we fall back to Eastern.
+  const timeZone = resolveTimeZone((await headers()).get("x-vercel-ip-timezone"));
+  const dateLabel = getSiteDate(now, timeZone).label;
 
-  const { theme, artworks } = await resolveGallery(now, 6);
+  const { theme, artworks } = await resolveGallery(now, 6, timeZone);
   const bios = await getArtistBios(artworks.map((a) => a.artistDisplayName));
 
   return (

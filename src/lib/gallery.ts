@@ -1,4 +1,5 @@
 import { findCalendarEntry, getSeasonForDate } from "./calendar";
+import { getSiteDate } from "./date";
 import { findStashEntry } from "./stash";
 import { getArtistsBornOrDiedOn, type WikidataCandidate } from "./wikidata";
 import { getGalleryArtworks, searchMetArtworks, backfillWithSeason, MINIMUM_ARTWORKS, type MetArtwork } from "./met";
@@ -59,9 +60,8 @@ export async function findBestWikidataMatch(
  * Resolve today's gallery: hand-curated calendar first, then the backfilled stash of
  * previously-found Wikidata matches, then a live Wikidata lookup, then season fallback.
  */
-export async function resolveGallery(date: Date, count = 6): Promise<GalleryResolution> {
-  const month = date.getMonth() + 1;
-  const day = date.getDate();
+export async function resolveGallery(date: Date, count = 6, timeZone?: string): Promise<GalleryResolution> {
+  const { month, day } = getSiteDate(date, timeZone);
   const season = getSeasonForDate(month, day);
 
   const curated = findCalendarEntry(month, day);

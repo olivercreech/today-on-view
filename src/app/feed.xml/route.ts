@@ -1,10 +1,12 @@
 import { resolveGallery } from "@/lib/gallery";
+import { getSiteDate } from "@/lib/date";
 import { getArtistBios } from "@/lib/wikipedia";
 
-// Same cadence as the homepage — regenerate at most every 6 hours. Route handlers need
+// Regenerate at most every 15 minutes, so the feed flips shortly after midnight Eastern
+// (feed readers fetch from their own servers, so there is no reader timezone). Route handlers need
 // `dynamic = "force-static"` to opt into caching at all; `revalidate` alone isn't enough.
 export const dynamic = "force-static";
-export const revalidate = 21600;
+export const revalidate = 900;
 
 function escapeXml(text: string): string {
   return text
@@ -26,8 +28,7 @@ function getSiteUrl(request: Request): string {
 export async function GET(request: Request) {
   const siteUrl = getSiteUrl(request);
   const now = new Date();
-  const dateLabel = now.toLocaleDateString("en-US", { weekday: "long", year: "numeric", month: "long", day: "numeric" });
-  const isoDate = now.toISOString().slice(0, 10);
+  const { label: dateLabel, iso: isoDate } = getSiteDate(now);
 
   const { theme, artworks } = await resolveGallery(now, 6);
   const bios = await getArtistBios(artworks.map((a) => a.artistDisplayName));
