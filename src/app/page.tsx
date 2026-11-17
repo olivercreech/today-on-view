@@ -16,8 +16,10 @@ export default async function Home() {
   const timeZone = resolveTimeZone((await headers()).get("x-vercel-ip-timezone"));
   const dateLabel = getSiteDate(now, timeZone).label;
 
-  const { theme, artworks } = await resolveGallery(now, 6, timeZone);
-  const bios = await getArtistBios(artworks.map((a) => a.artistDisplayName));
+  const { theme, artworks, artist } = await resolveGallery(now, 6, timeZone);
+  // One artist per day: only the day's featured artist gets a bio, never every artist
+  // whose work happens to appear (holiday and season themes have no featured artist).
+  const bios = artist ? await getArtistBios([artist]) : [];
 
   return (
     <div className="flex flex-col flex-1 items-center bg-background font-sans">
@@ -86,8 +88,12 @@ export default async function Home() {
             className="underline decoration-accent/40 hover:text-accent"
           >
             Met Museum Open Access API
-          </a>
-          . Artist biographies from{" "}
+          </a>{" "}
+          and{" "}
+          <a href="https://commons.wikimedia.org" className="underline decoration-accent/40 hover:text-accent">
+            Wikimedia Commons
+          </a>{" "}
+          (public-domain images). Artist biographies from{" "}
           <a href="https://en.wikipedia.org" className="underline decoration-accent/40 hover:text-accent">
             Wikipedia
           </a>

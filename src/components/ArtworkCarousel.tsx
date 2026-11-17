@@ -2,11 +2,11 @@
 
 import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
-import type { MetArtwork } from "@/lib/met";
+import type { Artwork } from "@/lib/artwork";
 
 const SWIPE_THRESHOLD_PX = 40;
 
-export function ArtworkCarousel({ artworks }: { artworks: MetArtwork[] }) {
+export function ArtworkCarousel({ artworks }: { artworks: Artwork[] }) {
   const [index, setIndex] = useState(0);
   const artwork = artworks[index];
   const touchStart = useRef<{ x: number; y: number } | null>(null);
@@ -58,12 +58,15 @@ export function ArtworkCarousel({ artworks }: { artworks: MetArtwork[] }) {
         <div className="relative aspect-16/9 w-full bg-black p-3 sm:aspect-4/3 sm:p-6">
           <div className="relative h-full w-full">
             <Image
-              src={artwork.primaryImageSmall}
+              src={artwork.imageUrl}
               alt={`${artwork.title}, by ${artwork.artistDisplayName}`}
               fill
               priority
               className="object-contain drop-shadow-[0_8px_30px_rgba(0,0,0,0.6)]"
               sizes="(min-width: 640px) 80vw, 100vw"
+              // Commons thumbnails are already web-sized; fetching them straight from
+              // Wikimedia's CDN avoids routing them through our image optimizer.
+              unoptimized={artwork.source === "commons"}
             />
           </div>
           <div
@@ -101,19 +104,19 @@ export function ArtworkCarousel({ artworks }: { artworks: MetArtwork[] }) {
               {artwork.objectDate ? ` · ${artwork.objectDate}` : ""}
             </p>
           </div>
-          {artwork.medium || artwork.department ? (
+          {artwork.medium || artwork.location ? (
             <p className="hidden text-sm leading-relaxed text-muted sm:block">
-              {[artwork.medium, artwork.department].filter(Boolean).join(" — ")}
+              {[artwork.medium, artwork.location].filter(Boolean).join(" — ")}
             </p>
           ) : null}
           <a
             href={artwork.objectURL}
             target="_blank"
             rel="noopener noreferrer"
-            aria-label={`View "${artwork.title}" at the Met (opens in a new tab)`}
+            aria-label={`View "${artwork.title}" ${artwork.source === "met" ? "at the Met" : "on Wikimedia Commons"} (opens in a new tab)`}
             className="text-sm font-medium text-accent underline underline-offset-4 decoration-accent/40 transition-colors hover:text-foreground"
           >
-            View at the Met &rarr;
+            {artwork.source === "met" ? "View at the Met" : "View on Wikimedia Commons"} &rarr;
           </a>
         </div>
       </div>
@@ -122,7 +125,7 @@ export function ArtworkCarousel({ artworks }: { artworks: MetArtwork[] }) {
         <div className="mt-2 flex items-center justify-center gap-2 sm:mt-5" role="tablist" aria-label="Choose an artwork">
           {artworks.map((a, i) => (
             <button
-              key={a.objectID}
+              key={a.id}
               type="button"
               role="tab"
               aria-selected={i === index}

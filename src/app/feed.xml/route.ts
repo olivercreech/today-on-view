@@ -30,14 +30,14 @@ export async function GET(request: Request) {
   const now = new Date();
   const { label: dateLabel, iso: isoDate } = getSiteDate(now);
 
-  const { theme, artworks } = await resolveGallery(now, 6);
-  const bios = await getArtistBios(artworks.map((a) => a.artistDisplayName));
+  const { theme, artworks, artist } = await resolveGallery(now, 6);
+  const bios = artist ? await getArtistBios([artist]) : [];
 
   const artworkListHtml = artworks
     .map(
       (a) =>
         `<p><strong>${escapeXml(a.title)}</strong> — ${escapeXml(a.artistDisplayName)}${a.objectDate ? `, ${escapeXml(a.objectDate)}` : ""}<br/>` +
-        `<img src="${escapeXml(a.primaryImageSmall)}" alt="${escapeXml(a.title)}" style="max-width:100%;height:auto;"/></p>`,
+        `<img src="${escapeXml(a.imageUrl)}" alt="${escapeXml(a.title)}" style="max-width:100%;height:auto;"/></p>`,
     )
     .join("\n");
 
@@ -52,7 +52,7 @@ export async function GET(request: Request) {
   <channel>
     <title>Today on View</title>
     <link>${siteUrl}</link>
-    <description>A themed art gallery curated for today's date, drawn from the Met Museum's Open Access collection.</description>
+    <description>A themed art gallery curated for today's date, drawn from the Met Museum's Open Access collection and public-domain paintings on Wikimedia Commons.</description>
     <language>en-us</language>
     <lastBuildDate>${now.toUTCString()}</lastBuildDate>
     <item>

@@ -20,7 +20,8 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { CALENDAR } from "../src/lib/calendar";
 import { getArtistsBornOrDiedOn } from "../src/lib/wikidata";
-import { searchMetArtworks, MINIMUM_ARTWORKS } from "../src/lib/met";
+import { searchMetArtworks } from "../src/lib/met";
+import { MINIMUM_ARTWORKS } from "../src/lib/artwork";
 import type { StashEntry } from "../src/lib/stash";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));

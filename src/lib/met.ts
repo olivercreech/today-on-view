@@ -1,26 +1,13 @@
-import type { Theme } from "./theme";
+import type { Artwork } from "./artwork";
 import { DAY_SECONDS, matchesQueryName } from "./http";
 
 const BASE = "https://collectionapi.metmuseum.org/public/collection/v1";
 // The Met retired unpaginated /v1/search on 2026-10-01 in favor of this paginated endpoint.
 const SEARCH_URL = "https://collectionapi.metmuseum.org/public/collection/v1.1/search";
 
-export type MetArtwork = {
-  objectID: number;
-  title: string;
-  artistDisplayName: string;
-  artistDisplayBio: string;
-  objectDate: string;
-  medium: string;
-  department: string;
-  creditLine: string;
-  objectURL: string;
-  primaryImageSmall: string;
-  tags: string[];
-};
-
 async function searchObjectIds(query: string, limit: number, artistOrCulture?: boolean): Promise<number[]> {
-  const params = new URLSearchParams({ q: query, hasImages: "true", limit: String(limit) });
+  // Paintings only — drawings and prints don't hold up visually on this page.
+  const params = new URLSearchParams({ q: query, hasImages: "true", medium: "Paintings", limit: String(limit) });
   if (artistOrCulture) params.set("artistOrCulture", "true");
 
   const res = await fetch(`${SEARCH_URL}?${params}`, {
@@ -32,7 +19,7 @@ async function searchObjectIds(query: string, limit: number, artistOrCulture?: b
   return data.objectIDs ?? [];
 }
 
-async function getObject(id: number): Promise<MetArtwork | null> {
+async function getObject(id: number): Promise<Artwork | null> {
   const res = await fetch(`${BASE}/objects/${id}`, {
     next: { revalidate: DAY_SECONDS },
   });
@@ -40,19 +27,19 @@ async function getObject(id: number): Promise<MetArtwork | null> {
 
   const data = await res.json();
   if (!data.primaryImageSmall || !data.isPublicDomain) return null;
+  // Belt and braces on top of the search's medium filter, which matches loosely.
+  if (!/painting/i.test(data.classification ?? "")) return null;
 
   return {
-    objectID: data.objectID,
+    id: `met-${data.objectID}`,
+    source: "met",
     title: data.title || "Untitled",
     artistDisplayName: data.artistDisplayName || "Unknown artist",
-    artistDisplayBio: data.artistDisplayBio || "",
-    objectDate: data.objectDate || "Date unknown",
+    objectDate: data.objectDate || "",
     medium: data.medium || "",
-    department: data.department || "",
-    creditLine: data.creditLine || "",
+    location: data.department || "",
     objectURL: data.objectURL || `https://www.metmuseum.org/art/collection/search/${data.objectID}`,
-    primaryImageSmall: data.primaryImageSmall,
-    tags: Array.isArray(data.tags) ? data.tags.map((t: { term: string }) => t.term).filter(Boolean) : [],
+    imageUrl: data.primaryImageSmall,
   };
 }
 
@@ -66,8 +53,9 @@ function normalizedTitle(title: string): string {
  * near-identical title (e.g. a set of "Autumn (Wine Harvest)" plates) — without this, a
  * themed search can return what looks to a visitor like the same picture several times.
  */
-function dedupeByTitle(artworks: MetArtwork[], seen: Set<string> = new Set()): MetArtwork[] {
-  const result: MetArtwork[] = [];
+function dedupeByTitle(artworks: Artwork[]): Artwork[] {
+  const seen = new Set<string>();
+  const result: Artwork[] = [];
   for (const artwork of artworks) {
     const key = normalizedTitle(artwork.title);
     if (seen.has(key)) continue;
@@ -77,68 +65,19 @@ function dedupeByTitle(artworks: MetArtwork[], seen: Set<string> = new Set()): M
   return result;
 }
 
-/** Minimum usable (public-domain, has-image) artworks a theme needs before it's considered a real match. */
-export const MINIMUM_ARTWORKS = 4;
-
-/** Search the Met's Open Access API and resolve up to `count` viewable, public-domain artworks. */
-export async function searchMetArtworks(query: string, count: number, artistOrCulture?: boolean): Promise<MetArtwork[]> {
+/** Search the Met's Open Access API and resolve up to `count` viewable, public-domain paintings. */
+export async function searchMetArtworks(query: string, count: number, artistOrCulture?: boolean): Promise<Artwork[]> {
   // The search endpoint doesn't tell us which results have public-domain images,
   // so over-fetch candidates and filter client-side.
   const ids = await searchObjectIds(query, count * 5, artistOrCulture);
   if (ids.length === 0) return [];
 
   const objects = await Promise.all(ids.map(getObject));
-  let resolved = objects.filter((o): o is MetArtwork => o !== null);
+  let resolved = objects.filter((o): o is Artwork => o !== null);
   if (artistOrCulture) {
     resolved = resolved.filter((o) => matchesQueryName(o.artistDisplayName, query));
   }
 
   const unique = dedupeByTitle(resolved);
   return unique.slice(0, count);
-}
-
-/** Top up a thin primary result list with non-duplicate artworks from the season's query. */
-export async function backfillWithSeason(primary: MetArtwork[], season: Theme, count: number): Promise<MetArtwork[]> {
-  if (primary.length >= count) return primary.slice(0, count);
-
-  const seenIds = new Set(primary.map((a) => a.objectID));
-  const seenTitles = new Set(primary.map((a) => normalizedTitle(a.title)));
-  const backfill = dedupeByTitle(await searchMetArtworks(season.metQuery, count, season.artistOrCulture), seenTitles);
-
-  const merged = [...primary];
-  for (const artwork of backfill) {
-    if (merged.length >= count) break;
-    if (!seenIds.has(artwork.objectID)) {
-      merged.push(artwork);
-      seenIds.add(artwork.objectID);
-    }
-  }
-  return merged.slice(0, count);
-}
-
-export type GalleryArtworksResult = {
-  artworks: MetArtwork[];
-  /**
-   * Whether the theme's own query produced at least one real artwork. Some curated
-   * entries name an artist whose work the Met will never have as public domain (e.g.
-   * Picasso died in 1973 and his estate still holds copyright) — in that case `artworks`
-   * is entirely season backfill, and the caller should treat this theme as a non-match
-   * rather than show its title/bio next to artworks that have nothing to do with it.
-   */
-  matchedTheme: boolean;
-};
-
-/**
- * Get the gallery for a theme, falling back to the current season's query
- * to top up the count if the themed search comes back thin.
- */
-export async function getGalleryArtworks(theme: Theme, season: Theme, count = 6): Promise<GalleryArtworksResult> {
-  const primary = await searchMetArtworks(theme.metQuery, count, theme.artistOrCulture);
-  const matchedTheme = primary.length > 0;
-
-  if (primary.length >= MINIMUM_ARTWORKS || theme.metQuery === season.metQuery) {
-    return { artworks: primary.slice(0, count), matchedTheme };
-  }
-
-  return { artworks: await backfillWithSeason(primary, season, count), matchedTheme };
 }
